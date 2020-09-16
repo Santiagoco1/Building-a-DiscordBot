@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS EXP (
+    UserID integer PRIMARY KEY,
+    XP integer DEFAULT 0,
+    Level Integer DEFAULT 0,
+    XPLock text DEFAULT CURRENT_TIMESTAMP
+);
