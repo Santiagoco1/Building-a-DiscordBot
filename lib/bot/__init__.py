@@ -6,6 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from discord import Embed, File
 from discord.ext.commands import Bot as BotBase
+from discord.ext.commands import Context
 from discord.ext.commands import CommandNotFound
 
 from ..db import db
@@ -13,7 +14,6 @@ from ..db import db
 PREFIX = "/"
 OWNER_IDS = [700777123261972513]
 COGS = [path.split("\\")[-1][:-3].replace("./lib/cogs/","") for path in glob("./lib/cogs/*.py")]
-
 
 class Ready(object):
     def __init__(self):
@@ -47,6 +47,10 @@ class Bot(BotBase):
         print("Setup complete")
 
     def run(self, version):
+
+        for cog in COGS:
+            print(cog)
+
         self.VERSION = version
 
         print("Running setup...")
@@ -57,6 +61,16 @@ class Bot(BotBase):
 
         print("Running Bot... ")
         super().run(self.TOKEN, reconnect=True)
+    
+    async def process_commands(self, message):
+        ctx = await self.get_context(message, cls=Context)
+
+        if ctx.command is not None and ctx.guild is not None:
+            if self.ready:
+                await self.invoke(ctx)
+
+            else:
+                await ctx.send("I'm not ready to receive commands, Please wait a few seconds")
 
     async def rules_reminder(self):
         await self.stdout.send("Remember to adhere to the rules!")
@@ -69,7 +83,7 @@ class Bot(BotBase):
 
     async def on_error(self, err, *args, **kwargs):
         if err == "on_command_error":
-            await args[0].send("Something wemt wrong.")
+            await args[0].send("Something went wrong.")
 
         await self.stdout.send("An error ocurred.")
         raise
@@ -115,7 +129,8 @@ class Bot(BotBase):
         else:
             print("Bot Reconnected")
 
-    async def on_message(self, message):
-        pass
+    async def on_message(self, message):            
+        if not message.author.bot:
+            await self.process_commands(message)
 
 bot = Bot()
