@@ -8,7 +8,7 @@ from discord import Embed, File
 from discord.errors import HTTPException, Forbidden
 from discord.ext.commands import Bot as BotBase
 from discord.ext.commands import Context
-from discord.ext.commands import (CommandNotFound, BadArgument, MissingRequiredArgument)
+from discord.ext.commands import (CommandNotFound, BadArgument, MissingRequiredArgument, CommandOnCooldown)
 
 from ..db import db
 
@@ -97,17 +97,20 @@ class Bot(BotBase):
         elif isinstance(exc, MissingRequiredArgument):
             await ctx.send("One o more requiered arguments are missing.")
 
-        elif isinstance(exc.original, HTTPException):
-            await ctx.send("Unable to send message.")    
-
-        elif isinstance(exc.original, Forbidden):
-            await ctx.send("I do not have permission to do that.")
+        elif isinstance(exc, CommandOnCooldown):
+            await ctx.send(f"That command is on {str(exc.cooldown.type).split('.')[-1]} cooldown. Try again in {exc.retry_after:,.2f} secs.")
 
         elif hasattr(exc, "original"):
-            raise exc.original
+            # elif isinstance(exc.original, HTTPException):
+            #     await ctx.send("Unable to send message.")    
+
+            if isinstance(exc.original, Forbidden):
+                await ctx.send("I do not have permission to do that.")
+            else:
+                raise exc.original
 
         else:
-            raise exc.original
+            raise exc
 
     async def on_ready(self):
         if not self.ready:
